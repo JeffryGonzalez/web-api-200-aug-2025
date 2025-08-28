@@ -19,3 +19,5 @@ This is your class repository.
 Sam was here.
 
 end of the day hit commit button.
+
+open pull request. create pr.
