@@ -20,12 +20,12 @@ public class VipsController : ControllerBase
         [FromServices] IDocumentSession session, // The service I'll use to add it to the databse
         [FromServices] TimeProvider clock) // I use this for ALL date/time stuff in APIs.
     {
-        // TODO: They already exist if we have a VIP entity with that same subject, and they haven't been retired.
-        var alreadyThere = await session.Query<VipEntity>().AnyAsync(v => v.Sub == request.Sub && v.IsRetired == false);
-        if (alreadyThere)
+        // Refactored
+        if (await session.Query<VipEntity>().AnyAsync(v => v.Sub == request.Sub && !v.IsRetired))
         {
             return Conflict();
         }
+
         // Do your database update or insert. 
         // Insert if it's not already there, update if it is.
         var entity = new VipEntity
@@ -147,45 +147,6 @@ public class VipsController : ControllerBase
         return Ok(new HelpDeskVipResponse(vips, vips.Count()));
     }
 
-}
-
-
-
-// This is a "DTO" ("Data Transfer Object") - just a way for .NET to deserialize JSON into a .NET object we can work with.
-public record VipCreateModel
-{
-
-    [Required]
-    public string Sub { get; set; } = string.Empty;
-    [Required, MaxLength(500), MinLength(10)]
-    public string Description { get; set; } = string.Empty;
-}
-
-// Another "DTO" - what we are sending back.
-
-/*
-{
-    "sub": "sue@company.com",
-    "description": "Sue is the CEO, We need to make sure she is always able to be effective"
-}
-*/
-public record VipDetailsModel
-{
-    public Guid Id { get; set; }
-    public string Sub { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public DateTimeOffset AddedOn { get; set; }
-}
-
-// This is what we are storing in the database.
-// It has "technical" details we don't share from our API, like if this VIP "isRetired"
-public class VipEntity
-{
-    public Guid Id { get; set; }
-    public string Sub { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public DateTimeOffset AddedOn { get; set; }
-    public bool IsRetired { get; set; } = false;
 }
 
 

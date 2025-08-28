@@ -5,8 +5,8 @@ Accept: image/jpg
 Content-Type: application/json
 
 {
-    "sub": "sasmel@aol.com",
-    "description": "My Golfing Buddy"
+    "sub": "sasmel3@aol.com",
+    "description": "My Golfing Buddy2"
 }
 
 ###
