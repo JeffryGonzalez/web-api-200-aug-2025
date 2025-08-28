@@ -20,24 +20,42 @@ public class VipsController : ControllerBase
         [FromServices] IDocumentSession session, // The service I'll use to add it to the databse
         [FromServices] TimeProvider clock) // I use this for ALL date/time stuff in APIs.
     {
-        // TODO: They already exist if we have a VIP entity with that same subject, and they haven't been retired.
-        var alreadyThere = await session.Query<VipEntity>().AnyAsync(v => v.Sub == request.Sub && v.IsRetired == false);
+        // Normalize the subject for consistent uniqueness checks
+        var normalizedSub = request.Sub?.Trim().ToLowerInvariant() ?? string.Empty;
+
+        // If an active VIP with that subject already exists -> 409
+        var alreadyThere = await session.Query<VipEntity>().AnyAsync(v => v.Sub == normalizedSub && v.IsRetired == false);
         if (alreadyThere)
         {
             return Conflict();
         }
-        // Do your database update or insert. 
-        // Insert if it's not already there, update if it is.
-        var entity = new VipEntity
+
+        // If a retired VIP exists with that subject, "reactivate" it instead of inserting a duplicate.
+        var retired = await session.Query<VipEntity>().SingleOrDefaultAsync(v => v.Sub == normalizedSub && v.IsRetired == true);
+        VipEntity entity;
+        if (retired is not null)
         {
-            Id = Guid.NewGuid(),
-            AddedOn = clock.GetLocalNow(),
-            Description = request.Description,
-            Sub = request.Sub,
-            IsRetired = false
-        };
-        session.Store(entity); // Marten does an "upsert" by default, if the Ids are the same. Your code may be more complex here.
-        await session.SaveChangesAsync();
+            retired.IsRetired = false;
+            retired.Description = request.Description;
+            retired.AddedOn = clock.GetLocalNow();
+            entity = retired;
+            session.Store(entity);
+            await session.SaveChangesAsync();
+        }
+        else
+        {
+            // Insert new
+            entity = new VipEntity
+            {
+                Id = Guid.NewGuid(),
+                AddedOn = clock.GetLocalNow(),
+                Description = request.Description,
+                Sub = normalizedSub,
+                IsRetired = false
+            };
+            session.Store(entity); // Marten does an "upsert" by default, if the Ids are the same. Your code may be more complex here.
+            await session.SaveChangesAsync();
+        }
         // Map it to a custom response model. I don' want to "leak" technical data like if it is retired or not to the client.
         var response = new VipDetailsModel
         {
