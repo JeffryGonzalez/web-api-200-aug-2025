@@ -63,3 +63,16 @@ public record SubmitIssueResponse
     }
 
 }
+
+public record CollectionResponse<T>(IReadOnlyList<T> Data);
+
+public record EmployeeProblemCollectionResponse 
+{
+    public IReadOnlyList<EmployeeProblemEntity> Data { get; set; }
+
+    public string[] FilteringBy { get; set; } = [];
+    public EmployeeProblemCollectionResponse(IReadOnlyList<EmployeeProblemEntity> data)
+    {
+        this.Data = data;
+    }
+}

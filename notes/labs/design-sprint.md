@@ -51,7 +51,7 @@ We could use a QueryString argument.
 
 For example:
 ```http
-GET http://localhost:1337/employee/problems?softwareId=398398938
+GET http://localhost:1337/employee/problems?softwareId=bc3f26b0-4f07-41ad-837d-e73733afbe83
 Accept: application/json
 Authorization: Bearer {JWT}
 ```
@@ -64,14 +64,77 @@ Authorization: Bearer {JWT}
 
 **Your Thinking and Examples Below**
 
+I think we could just do a DELETE to the resource. 
+
+```http
+GET http://localhost:1337/employee/problems/2b533aef-c1f1-4960-be4c-fb5cce868a64
+```
+
+```http
+DELETE http://localhost:1337/employees/problems/2b533aef-c1f1-4960-be4c-fb5cce868a64
+```
+
+- If the problem with that Id:
+    - exists
+    - is still awaiting tech assignment
+- Then return a 204 - No Content
+    - Behind the scenes, either delete it from the database, or mark it as cancelled.
+    - If we don't delete it, make sure it doesn't show up through the API any longer.
+
+- If a problem with that Id does not exist, return a 204 - No Content
+- If a problem with that Id does exist, but it is not in the "AwaitingTechAssignment" state, send a 409 - Conflict
+
+
+
 ### Assigning a Problem To A Tech
 
 > We need a way for the techs of the Help Desk to see a list of *all* problems that are awaiting tech assignment. It might be nice if they could filter by either the person that submitted them, or by the software they are having an issue with.
 
 **Your Thinking and Examples Below**
 
+I propose a new resource:
+
+```http
+GET http://localhost:1338/techs/problem-queue
+Accept: application/json
+Authorization: Bearer {JWT with Role="HelpDeskTech"}
+```
+
+This should be secured so that only members of the "HelpDeskTech" role can access this.
+
+We could add QueryString arguments for the filtering.
+
+```http
+GET http://localhost:1338/techs/problem-queue?softwareId={idOfSoftware}&submittedBy={who}
+Accept: application/json
+Authorization: Bearer {JWT with Role="HelpDeskTech"}
+```
+
+
+
 > Once a tech has "located" a problem that is awaiting tech assignment, how could, through the API, that tech "adopt" that. What would happen to that problem?
->
+
 
 **Your Thinking and Examples Below**
+
+The tech could put that in their basket of current work:
+
+```http
+PUT http://localhost:1338/techs/current-work/{idOfIssue}
+Accept: application/json
+Authorization: Bearer {JWT with Role="HelpDeskTech"}
+```
+
+If the issue is still `AwaitingTechAssignment` this will change the status to `AssignedToTech` and return an `202 Accepted` status code.
+
+It should no longer appear in the problem queue.
+
+It *should* appear in the tech's `current-work`.
+
+```http
+GET http://localhost:1338/techs/current-work
+Accept: application/json
+Authorization: Bearer {JWT with Role="HelpDeskTech"}
+```
+
 
