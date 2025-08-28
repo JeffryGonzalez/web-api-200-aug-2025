@@ -16,3 +16,8 @@ This is your class repository.
 ```bash
  npx gitpick -o JeffryGonzalez/web-api-200-aug-2025 instructor
 ```
+Sam was here.
+
+end of the day hit commit button.
+
+open pull request. create pr.
